@@ -15,6 +15,10 @@ Rebuild the PDF with:
 python scripts/build_public_fixture.py
 ```
 
+The builder embeds a Chinese TrueType font so the fixture renders in browser and desktop
+PDF viewers. On systems without a supported font in a standard location, set
+`PUBLIC_FIXTURE_FONT` to a local TTF/TTC file before rebuilding.
+
 The fixture exercises PDF validation, page rendering, auxiliary-text extraction,
 protocol parsing, range resolution, validation and artifact publication. Because the
 semantic response is frozen, it does not measure live-model accuracy.

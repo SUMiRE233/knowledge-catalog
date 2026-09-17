@@ -3,6 +3,7 @@ import hashlib
 import json
 from pathlib import Path
 
+import fitz
 from jsonschema import Draft202012Validator
 
 from app.models import KnowledgeTree
@@ -35,6 +36,14 @@ def test_frozen_protocol_matches_public_gold():
 
 def test_public_demo_runs_real_preparation_and_publication_path(tmp_path):
     fixture = build_fixture(DEFAULT_SPEC, tmp_path / "fixture.pdf")
+    with fitz.open(fixture) as document:
+        assert all(
+            any(
+                font[1] != "n/a" and font[2] in {"TrueType", "CIDFontType2"}
+                for font in page.get_fonts(full=True)
+            )
+            for page in document
+        )
     summary = asyncio.run(run_demo(tmp_path / "demo", fixture))
     assert summary["image_count"] == 2
     assert summary["node_count"] == 32

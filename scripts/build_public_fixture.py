@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 from pathlib import Path
 
 from reportlab.lib import colors
@@ -12,7 +13,7 @@ from reportlab.lib.pagesizes import A4, landscape
 from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
 from reportlab.lib.units import mm
 from reportlab.pdfbase import pdfmetrics
-from reportlab.pdfbase.cidfonts import UnicodeCIDFont
+from reportlab.pdfbase.ttfonts import TTFont
 from reportlab.pdfgen.canvas import Canvas
 from reportlab.platypus import (
     PageBreak,
@@ -26,6 +27,7 @@ from reportlab.platypus import (
 ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_SPEC = ROOT / "fixtures" / "public" / "synthetic_curriculum_spec.json"
 DEFAULT_OUTPUT = ROOT / "fixtures" / "public" / "synthetic_curriculum.pdf"
+FONT_NAME = "FixtureChinese"
 
 
 class InvariantCanvas(Canvas):
@@ -34,9 +36,25 @@ class InvariantCanvas(Canvas):
         super().__init__(*args, **kwargs)
 
 
+def _fixture_font_path() -> Path:
+    configured = os.getenv("PUBLIC_FIXTURE_FONT")
+    candidates = [
+        Path(configured) if configured else None,
+        Path("C:/Windows/Fonts/simhei.ttf"),
+        Path("/usr/share/fonts/truetype/wqy/wqy-zenhei.ttc"),
+        Path("/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc"),
+    ]
+    for candidate in candidates:
+        if candidate and candidate.is_file():
+            return candidate
+    raise FileNotFoundError(
+        "找不到可嵌入的中文字体；请通过 PUBLIC_FIXTURE_FONT 指向 TTF/TTC 字体"
+    )
+
+
 def _page_footer(canvas, document) -> None:
     canvas.saveState()
-    canvas.setFont("STSong-Light", 8)
+    canvas.setFont(FONT_NAME, 8)
     canvas.setFillColor(colors.HexColor("#59636E"))
     canvas.drawString(18 * mm, 10 * mm, "完全合成公开 fixture - 不代表真实课程标准")
     canvas.drawRightString(279 * mm, 10 * mm, f"第 {document.page} 页")
@@ -46,7 +64,7 @@ def _page_footer(canvas, document) -> None:
 def build_fixture(spec_path: Path = DEFAULT_SPEC, output_path: Path = DEFAULT_OUTPUT) -> Path:
     spec = json.loads(spec_path.read_text(encoding="utf-8"))
     output_path.parent.mkdir(parents=True, exist_ok=True)
-    pdfmetrics.registerFont(UnicodeCIDFont("STSong-Light"))
+    pdfmetrics.registerFont(TTFont(FONT_NAME, str(_fixture_font_path())))
 
     document = SimpleDocTemplate(
         str(output_path),
@@ -62,7 +80,7 @@ def build_fixture(spec_path: Path = DEFAULT_SPEC, output_path: Path = DEFAULT_OU
     title_style = ParagraphStyle(
         "ChineseTitle",
         parent=styles["Title"],
-        fontName="STSong-Light",
+        fontName=FONT_NAME,
         fontSize=18,
         leading=23,
         alignment=TA_CENTER,
@@ -71,7 +89,7 @@ def build_fixture(spec_path: Path = DEFAULT_SPEC, output_path: Path = DEFAULT_OU
     subtitle_style = ParagraphStyle(
         "ChineseSubtitle",
         parent=styles["Normal"],
-        fontName="STSong-Light",
+        fontName=FONT_NAME,
         fontSize=9,
         leading=13,
         alignment=TA_CENTER,
@@ -80,7 +98,7 @@ def build_fixture(spec_path: Path = DEFAULT_SPEC, output_path: Path = DEFAULT_OU
     cell_style = ParagraphStyle(
         "ChineseCell",
         parent=styles["Normal"],
-        fontName="STSong-Light",
+        fontName=FONT_NAME,
         fontSize=8.5,
         leading=11,
         textColor=colors.HexColor("#17212B"),

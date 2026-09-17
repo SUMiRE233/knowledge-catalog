@@ -1,0 +1,60 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.invalid/knowledge-catalog/schemas/release-manifest-1.0.0.json",
+  "title": "Knowledge Catalog Release Manifest",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "manifest_schema_version",
+    "knowledge_tree_schema_version",
+    "catalog_version",
+    "logical_name",
+    "released_at",
+    "artifact",
+    "artifact_sha256",
+    "counts",
+    "source",
+    "compatibility"
+  ],
+  "properties": {
+    "manifest_schema_version": {"const": "1.0.0"},
+    "knowledge_tree_schema_version": {"const": "1.0.0"},
+    "catalog_version": {"type": "string", "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$"},
+    "logical_name": {"type": "string", "pattern": "^[A-Za-z0-9_-]+$"},
+    "released_at": {"type": "string", "format": "date"},
+    "artifact": {"type": "string", "pattern": "^[A-Za-z0-9_-]+\\.json$"},
+    "artifact_sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+    "counts": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["nodes", "leaves", "scoped_nodes"],
+      "properties": {
+        "nodes": {"type": "integer", "minimum": 1},
+        "leaves": {"type": "integer", "minimum": 1},
+        "scoped_nodes": {"type": "integer", "minimum": 0}
+      }
+    },
+    "source": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "title", "included", "sha256", "generation_method"],
+      "properties": {
+        "kind": {"type": "string"},
+        "title": {"type": "string", "minLength": 1},
+        "included": {"type": "boolean"},
+        "sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+        "generation_method": {"type": "string", "minLength": 1}
+      }
+    },
+    "compatibility": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["canonical_request", "legacy_request"],
+      "properties": {
+        "canonical_request": {"type": "string"},
+        "legacy_request": {"type": "string"}
+      }
+    },
+    "known_limitations": {"type": "array", "items": {"type": "string"}}
+  }
+}

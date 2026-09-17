@@ -1,0 +1,29 @@
+{
+  "evaluation_id": "public-synthetic-gold-v1",
+  "evaluated_at": "2026-09-17",
+  "dataset": {
+    "type": "synthetic",
+    "fixture": "fixtures/public/synthetic_curriculum.pdf",
+    "gold": "evaluation/gold/public_fixture_gold.jsonl",
+    "assertions": 40
+  },
+  "execution": {
+    "runs": 1,
+    "semantic_executor": "deterministic_test_double",
+    "pipeline": "PDF render -> parser -> range -> guard -> publish",
+    "model_request_count": 1,
+    "image_count": 2
+  },
+  "metrics": {
+    "assertion_count": 40,
+    "passed_count": 40,
+    "failed_count": 0,
+    "accuracy": 1.0,
+    "failures": []
+  },
+  "pipeline_validation": {
+    "warning_count": 0,
+    "error_count": 0
+  },
+  "claim_boundary": "This measures deterministic pipeline and contract reproducibility on a synthetic fixture; it does not measure real multimodal model accuracy."
+}

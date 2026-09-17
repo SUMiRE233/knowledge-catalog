@@ -1,0 +1,10 @@
+{
+  "index_schema_version": "1.0.0",
+  "catalogs": {
+    "KT_MICSS_junior": {
+      "latest": "1.0.0",
+      "artifact": "v1.0.0/KT_MICSS_junior.json",
+      "manifest": "v1.0.0/KT_MICSS_junior.manifest.json"
+    }
+  }
+}

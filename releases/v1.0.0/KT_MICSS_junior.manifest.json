@@ -1,0 +1,28 @@
+{
+  "manifest_schema_version": "1.0.0",
+  "knowledge_tree_schema_version": "1.0.0",
+  "catalog_version": "1.0.0",
+  "logical_name": "KT_MICSS_junior",
+  "released_at": "2026-09-17",
+  "artifact": "KT_MICSS_junior.json",
+  "artifact_sha256": "cf22414d8f009ac1f9db1c272b8d01804e4cc409d65194aca63d14f08c47ad14",
+  "counts": {
+    "nodes": 204,
+    "leaves": 159,
+    "scoped_nodes": 158
+  },
+  "source": {
+    "kind": "private_authoritative_pdf",
+    "title": "初中数学课程标准",
+    "included": false,
+    "sha256": "e8550d17b5ac4c299732f6c0c0cffe37f93a72db1613c94dd70d38cacd99e85b",
+    "generation_method": "multimodal extraction followed by human review"
+  },
+  "compatibility": {
+    "canonical_request": "KT_MICSS_junior",
+    "legacy_request": "KT_MICSS_junior.json"
+  },
+  "known_limitations": [
+    "One of 159 leaf nodes has no scope because the source text could not be recovered reliably."
+  ]
+}

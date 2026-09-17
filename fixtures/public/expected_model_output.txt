@@ -1,0 +1,58 @@
+BEGIN_KNOWLEDGE_TREE
+LEVEL 1 | 七年级上册
+LEVEL 2 | 数与式
+LEVEL 3 | 有理数概念
+SCOPE | 正数、负数和零的定义。
+LEVEL 3 | 数轴
+SCOPE | 数轴的原点、正方向和单位长度。
+LEVEL 3 | 绝对值
+SCOPE | 绝对值的意义及其简单比较。
+LEVEL 3 | 有理数运算
+SCOPE | 有理数的加法、减法、乘法和除法。
+LEVEL 2 | 方程
+LEVEL 3 | 等式性质
+SCOPE | 等式的基本性质。
+LEVEL 3 | 一元一次方程
+SCOPE | 一元一次方程的概念和解法。
+LEVEL 3 | 方程应用
+SCOPE | 使用一元一次方程表示并解决简单问题。
+LEVEL 3 | 解的检验
+SCOPE | 把所得的解代入原方程进行检验。
+LEVEL 2 | 图形
+LEVEL 3 | 线段
+SCOPE | 线段、中点和线段长度。
+LEVEL 3 | 角
+SCOPE | 角的表示、度量和比较。
+LEVEL 3 | 相交线
+SCOPE | 对顶角和邻补角。
+LEVEL 3 | 平行线
+SCOPE | 平行线的判定和性质。
+LEVEL 2 | 数据
+LEVEL 3 | 数据收集
+SCOPE | 通过调查收集简单数据。
+LEVEL 3 | 统计表
+SCOPE | 使用统计表整理数据。
+LEVEL 3 | 条形图
+SCOPE | 绘制并读取条形统计图。
+LEVEL 3 | 平均数
+SCOPE | 算术平均数的意义和计算。
+LEVEL 1 | 七年级下册
+LEVEL 2 | 函数
+LEVEL 3 | 变量关系
+SCOPE | 用表格表示两个变量之间的关系。
+LEVEL 3 | 函数概念
+SCOPE | 函数及自变量取值范围的初步概念。
+LEVEL 3 | 函数图像
+SCOPE | 在直角坐标系中描点并认识函数图像。
+LEVEL 3 | 一次函数
+SCOPE | 一次函数的表达式和基本图像。
+LEVEL 2 | 几何
+LEVEL 3 | 三角形
+SCOPE | 三角形的边、角和分类。
+LEVEL 3 | 全等
+SCOPE | 全等三角形的概念和判定。
+LEVEL 3 | 轴对称
+SCOPE | 轴对称图形及其对称轴。
+LEVEL 3 | 勾股定理
+SCOPE | 直角三角形三边之间的关系。
+END_KNOWLEDGE_TREE

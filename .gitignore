@@ -1,18 +1,92 @@
+# Python bytecode and tool caches
 __pycache__/
 *.py[cod]
+*$py.class
 .pytest_cache/
 .pytest-tmp-*/
 .ruff_cache/
+.mypy_cache/
+.coverage
+.coverage.*
+htmlcov/
+
+# Virtual environments and package builds
 .venv/
+venv/
+env/
+build/
+dist/
+*.egg-info/
+
+# Secrets and machine-local configuration
 .env
 .env.*
 !.env.example
+*.local
+*.key
+*.pem
+*.p12
+*.pfx
+credentials*.json
+secrets*.json
+
+# IDE, OS and local agent state
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
+Desktop.ini
+.codex/
+.agents/
+
+# Logs, local databases and process state
+*.log
+*.pid
+*.sqlite
+*.sqlite3
+*.db
+
+# Private/raw source documents are denied by default. Public fixtures must be
+# explicitly allowlisted below.
+*.pdf
+*.doc
+*.docx
+*.ppt
+*.pptx
+*.xls
+*.xlsx
+*.csv
+*.tsv
+*.png
+*.jpg
+*.jpeg
+*.webp
+*.tif
+*.tiff
+*.zip
+*.7z
+*.rar
+
+# Only the complete, synthetic and redistributable fixture is public.
+fixtures/*
+
+# Private evaluation inputs and transient evaluation runs
+evaluation/private/
+evaluation/runs/
+evaluation/actual/
+evaluation/**/raw/
+evaluation/**/*.local.*
+
+# Runtime, uploaded inputs and generated outputs
 runtime/
 output/
+tmp/
+temp/
 acceptance_output/
 public_demo_output/
-tmp/
 test_input/
+testinput/
+test-input/
 generated_knowledge_trees/
 highschool_smoke_output/
 rollback_smoke_output/
@@ -21,3 +95,31 @@ primary_review_output_*/
 primary_year4_final_*/
 primary_year4_retry_*/
 manual_high_school_grade_split_*/
+
+# Per-job/model audit artifacts must stay local unless deliberately converted
+# into a reviewed public fixture.
+model_batches/
+vanguard_batches/
+page_images/
+prepared/pages/
+**/model_output.txt
+**/vanguard_output.txt
+**/business_prompt.txt
+**/layout_profile.json
+**/prepared_document.json
+**/run_report.json
+**/validation_report.json
+**/knowledge_tree.json
+**/knowledge_catalog.txt
+
+# Draft catalogs are private by default; reviewed versioned releases are public.
+KT_*.json
+releases/drafts/
+releases/staging/
+releases/**/*.tmp
+!releases/**/KT_*.json
+
+# Explicit public-data allowlist. Keep this last so generic artifact rules do
+# not hide reviewed fixture files.
+!fixtures/public/
+!fixtures/public/**

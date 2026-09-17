@@ -189,3 +189,33 @@ def test_catalog_format():
     lines = catalog_lines(parsed.children)
     assert lines[0] == "1|初一上册"
     assert "1.1.2|初一上册/完整数/应用问题|完整数四则运算的应用问题" in lines
+
+
+def test_guard_blocks_numbered_child_nodes_swallowed_by_scope():
+    parsed = FormattedTextParser().parse(
+        """BEGIN_KNOWLEDGE_TREE
+LEVEL 1 | 数学
+LEVEL 2 | 完整数
+SCOPE | 1.1 概念 定义；1.2 运算 加减乘除
+END_KNOWLEDGE_TREE""",
+        "目录",
+    )
+    report = OutputGuard().validate(parsed.tree, "", "", parsed.issues, [])
+
+    assert report.passed is False
+    assert "NUMBERED_NODE_IN_SCOPE" in {issue.code for issue in report.issues}
+
+
+def test_guard_blocks_scope_on_non_leaf_node():
+    parsed = FormattedTextParser().parse(
+        """BEGIN_KNOWLEDGE_TREE
+LEVEL 1 | 数学
+SCOPE | 错误挂在父节点的描述
+LEVEL 2 | 子节点
+END_KNOWLEDGE_TREE""",
+        "目录",
+    )
+    report = OutputGuard().validate(parsed.tree, "", "", parsed.issues, [])
+
+    assert report.passed is False
+    assert "NON_LEAF_SCOPE" in {issue.code for issue in report.issues}

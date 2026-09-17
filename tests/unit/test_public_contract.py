@@ -15,14 +15,14 @@ from scripts.run_public_demo import EXPECTED_OUTPUT, run_demo
 ROOT = Path(__file__).resolve().parents[2]
 
 
-def test_public_gold_has_40_unique_human_readable_assertions():
+def test_public_regression_reference_has_41_unique_human_readable_assertions():
     gold = load_gold(ROOT / "evaluation" / "gold" / "public_fixture_gold.jsonl")
-    assert len(gold) == 40
-    assert len({item["id"] for item in gold}) == 40
+    assert len(gold) == 41
+    assert len({item["id"] for item in gold}) == 41
     assert {item["kind"] for item in gold} == {"node", "scope"}
 
 
-def test_frozen_protocol_matches_public_gold():
+def test_frozen_protocol_matches_public_regression_reference():
     parsed = FormattedTextParser().parse(
         EXPECTED_OUTPUT.read_text(encoding="utf-8"), "公开合成 fixture"
     )
@@ -30,7 +30,7 @@ def test_frozen_protocol_matches_public_gold():
         parsed.tree.model_dump(mode="json"),
         load_gold(ROOT / "evaluation" / "gold" / "public_fixture_gold.jsonl"),
     )
-    assert result["assertion_count"] == 40
+    assert result["assertion_count"] == 41
     assert result["failed_count"] == 0
 
 
@@ -46,11 +46,33 @@ def test_public_demo_runs_real_preparation_and_publication_path(tmp_path):
         )
     summary = asyncio.run(run_demo(tmp_path / "demo", fixture))
     assert summary["image_count"] == 2
-    assert summary["node_count"] == 32
+    assert summary["node_count"] == 33
     assert summary["leaf_count"] == 24
     assert summary["warning_count"] == 0
     assert summary["error_count"] == 0
     assert (tmp_path / "demo" / "artifacts" / "run_report.json").is_file()
+    layout_profile = json.loads(
+        (tmp_path / "demo" / "artifacts" / "layout_profile.json").read_text(
+            encoding="utf-8"
+        )
+    )
+    layout_schema = json.loads(
+        (ROOT / "schemas" / "layout_profile.schema.json").read_text(encoding="utf-8")
+    )
+    Draft202012Validator(layout_schema).validate(layout_profile)
+    assert layout_profile["document_identity"]["root_labels"] == [
+        "合成初中数学课程纲要（公开评测版）"
+    ]
+    assert [item["label"] for item in layout_profile["range_labels"]] == [
+        "七年级上册",
+        "七年级下册",
+    ]
+    tree = json.loads(
+        (tmp_path / "demo" / "artifacts" / "knowledge_tree.json").read_text(
+            encoding="utf-8"
+        )
+    )
+    assert len(tree["children"]) == 1
 
 
 def test_versioned_junior_release_contract():
@@ -81,3 +103,10 @@ def test_versioned_junior_release_contract():
     }
     assert hashlib.sha256(artifact.read_bytes()).hexdigest() == manifest["artifact_sha256"]
     assert manifest["source"]["included"] is False
+
+
+def test_layout_profile_schema_is_valid():
+    schema = json.loads(
+        (ROOT / "schemas" / "layout_profile.schema.json").read_text(encoding="utf-8")
+    )
+    Draft202012Validator.check_schema(schema)

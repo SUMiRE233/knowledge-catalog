@@ -9,6 +9,7 @@ from app.llm.prompts import (
     primary_hierarchy_review_instruction,
 )
 from app.models import ModelAnalysisResponse, PreparedDocument, PreparedPage
+from app.parsing.formatted_text_parser import FormattedTextParser
 
 
 class SequenceModel:
@@ -61,6 +62,66 @@ END_KNOWLEDGE_TREE"""
     assert model.requests[2].previous_path_summary == (
         "四年级 / 数与运算 / 1.0 100 000 以内的整数"
     )
+
+
+@pytest.mark.asyncio
+async def test_split_requests_are_consolidated_before_single_root_validation(
+    tmp_path: Path,
+):
+    first = """BEGIN_KNOWLEDGE_TREE
+LEVEL 1 | 初中数学课程标准
+LEVEL 2 | 七年级上册
+LEVEL 3 | 数与式
+END_KNOWLEDGE_TREE"""
+    second = """BEGIN_KNOWLEDGE_TREE
+LEVEL 1 | 初中数学课程标准
+LEVEL 2 | 七年级下册
+LEVEL 3 | 函数
+END_KNOWLEDGE_TREE"""
+    merged = first + "\n" + second
+    reviewed = """BEGIN_KNOWLEDGE_TREE
+LEVEL 1 | 初中数学课程标准
+LEVEL 2 | 七年级上册
+LEVEL 3 | 数与式
+LEVEL 2 | 七年级下册
+LEVEL 3 | 函数
+END_KNOWLEDGE_TREE"""
+    model = SequenceModel([first, second, merged, reviewed])
+    pages = []
+    for page_number in (1, 2):
+        image_path = tmp_path / f"page_{page_number}.png"
+        image_path.write_bytes(b"image")
+        pages.append(PreparedPage(page_number=page_number, image_path=image_path))
+    document = PreparedDocument(
+        source_file_name="course.pdf", input_type="standard_pdf", pages=pages
+    )
+    settings = Settings(
+        runtime_dir=tmp_path / "runtime",
+        llm_api_key="fake-key",
+        llm_model="fake-model",
+        llm_max_images_per_request=1,
+    )
+
+    final_output, batch_outputs = await DocumentAnalyzer(model, settings).analyze(
+        document,
+        analysis_prompt_override="每个子请求使用同一个总根",
+        merge_prompt_override="合并到唯一总根",
+        review_prompt_override="最终只能有一个 LEVEL 1",
+    )
+    parsed = FormattedTextParser().parse(final_output, "测试目录")
+
+    assert batch_outputs == [first, second]
+    assert [request.operation for request in model.requests] == [
+        "extract",
+        "extract",
+        "merge",
+        "merge",
+    ]
+    assert [node.name for node in parsed.tree.children] == ["初中数学课程标准"]
+    assert [node.name for node in parsed.tree.children[0].children] == [
+        "七年级上册",
+        "七年级下册",
+    ]
 
 
 def test_path_summary_keeps_missing_parent_level():

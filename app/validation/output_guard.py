@@ -18,6 +18,8 @@ RISK_PATTERNS = {
     "MODEL_SELF_EXPLANATION": re.compile(r"(作为.{0,8}模型|无法提供|我的分析)"),
 }
 ALLOWED_FIELDS = {"id", "name", "scope", "children"}
+SOURCE_MATCH_EXEMPT_NAMES = {"未知学科"}
+NUMBERED_NODE_IN_SCOPE_RE = re.compile(r"(?:^|[；。]\s*)\d+(?:\.\d+)+\s+\S+")
 
 
 def source_match_text(value: str) -> str:
@@ -110,7 +112,25 @@ class OutputGuard:
                         node_id=node.id,
                     )
                 )
-            if compact_source:
+            if node.scope and NUMBERED_NODE_IN_SCOPE_RE.search(node.scope):
+                issues.append(
+                    ValidationIssue(
+                        severity="error",
+                        code="NUMBERED_NODE_IN_SCOPE",
+                        message="scope 疑似吞入一个或多个明确编号的子节点",
+                        node_id=node.id,
+                    )
+                )
+            if node.scope and node.children:
+                issues.append(
+                    ValidationIssue(
+                        severity="error",
+                        code="NON_LEAF_SCOPE",
+                        message="非叶节点不得携带 scope；scope 必须挂到对应叶节点",
+                        node_id=node.id,
+                    )
+                )
+            if compact_source and node.name not in SOURCE_MATCH_EXEMPT_NAMES:
                 name_found = source_match_text(node.name) in compact_source
                 scope_parts = (
                     [part for part in re.split(r"[；;]", node.scope) if part.strip()]

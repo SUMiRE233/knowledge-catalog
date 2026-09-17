@@ -1,6 +1,6 @@
 [project]
 name = "teaching-cycle-knowledge-catalog"
-version = "0.2.0"
+version = "0.3.0"
 description = "视觉优先的教学周期知识目录生成后端"
 requires-python = ">=3.11"
 dependencies = [
@@ -13,6 +13,9 @@ dependencies = [
   "PyMuPDF>=1.24",
   "Pillow>=10.4",
 ]
+
+[project.urls]
+Repository = "https://github.com/SUMiRE233/knowledge-catalog"
 
 [project.optional-dependencies]
 dev = [

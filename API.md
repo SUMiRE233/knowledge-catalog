@@ -40,7 +40,7 @@
 | `range` | string | 否 | `全部` | 如 `全部`、`初一上册`、`初中` |
 | `enhance_images` | boolean | 否 | `true` | 是否做轻量图像增强 |
 | `use_ocr_fallback` | boolean | 否 | `false` | OCR 预留开关，当前尚未接入 OCR 引擎 |
-| `document_profile` | string | 否 | `general` | `general` 或马来西亚华文小学数学 `primary_dskp_sjkc` |
+| `document_profile` | string | 否 | `general` | 兼容字段；接受 `general` 或 `primary_dskp_sjkc`，两者均执行 Vanguard |
 
 示例：
 
@@ -53,9 +53,13 @@ curl -X POST http://127.0.0.1:8000/api/v1/knowledge-trees/jobs \
   -F "document_profile=general"
 ```
 
-`primary_dskp_sjkc` 画像专用于 DSKP SJKC 数学大纲：从“学习领域 / 课题 /
-内容标准 / 学习标准”提取知识，并排除表现等级、人文与价值观、
-活动建议、评估及行政性内容。
+系统首先通过 Vanguard 从当前 PDF 识别布局、节点层级、scope 来源和排除区域，随后将通过
+Schema 校验的 `layout_profile.json` 嵌入通用提示词。`document_profile` 不再选择静态课程模板。
+
+一次请求只允许表达一个逻辑上应当统合的 PDF 知识目录资产。即使系统为模型调用把页面拆成
+多个内部子请求，最终结果也必须且只能有一个 `LEVEL 1` 总根；年级、册别和学期放在总根下。
+上游不得把互不相关、应分别发布的课程 PDF 预先拼接后作为一次请求上传。多根最终结果返回
+`OUTPUT_PROTOCOL_ERROR`，根身份无法由整份页面证据解决时返回 `VANGUARD_LAYOUT_UNRESOLVED`。
 
 成功响应 `202`：
 
@@ -74,7 +78,8 @@ curl -X POST http://127.0.0.1:8000/api/v1/knowledge-trees/jobs \
 
 状态值：`pending`、`processing`、`succeeded`、`failed`
 
-阶段值：`upload`、`inspect`、`render`、`preprocess`、`analyze`、`merge`、`parse`、`validate`、`publish`
+阶段值：`upload`、`inspect`、`render`、`preprocess`、`vanguard`、`compose`、`analyze`、
+`merge`、`parse`、`validate`、`publish`
 
 处理中响应 `200`：
 
@@ -151,11 +156,14 @@ curl -X POST http://127.0.0.1:8000/api/v1/knowledge-trees/jobs \
     ]
   },
   "artifacts": [
+    "business_prompt.txt",
     "knowledge_catalog.txt",
     "knowledge_tree.json",
+    "layout_profile.json",
     "model_output.txt",
     "prepared_document.json",
     "run_report.json",
+    "vanguard_output.txt",
     "validation_report.json"
   ]
 }
@@ -176,6 +184,10 @@ type KnowledgeNode = {
 例如 `1.1 完整数与自然数的概念` 发布为 `完整数与自然数的概念`；非叶子节点名称保持原文，
 节点路径编号仍由 `id` 字段表达。
 
+如果处理后的 PDF 不包含可由页面证据确认的学科、学段或年级身份，系统使用固定技术根节点
+`未知学科`，不会根据文件名或课程内容猜测年级。此时 `range=全部` 可以发布结果；请求具体
+范围时返回 `RANGE_NOT_FOUND`。
+
 `warning_count > 0` 不代表任务失败；前端可提示“结果存在需复核项”。`error_count > 0` 的结果不会发布为成功任务。
 
 ## 下载 artifact
@@ -190,6 +202,9 @@ type KnowledgeNode = {
 - `validation_report.json`
 - `run_report.json`
 - `prepared_document.json`
+- `vanguard_output.txt`
+- `layout_profile.json`
+- `business_prompt.txt`
 
 响应为文件流，前端可使用 `Blob` 下载。非白名单名称返回 `404 ARTIFACT_NOT_FOUND`。
 
@@ -211,10 +226,10 @@ type KnowledgeNode = {
 | HTTP | 错误码示例 | 含义 |
 |---:|---|---|
 | 400 | `EMPTY_FILE`、`INVALID_PDF`、`INVALID_IMAGE` | 请求文件无效 |
-| 404 | `JOB_NOT_FOUND`、`ARTIFACT_NOT_FOUND` | 资源不存在 |
+| 404 | `JOB_NOT_FOUND`、`ARTIFACT_NOT_FOUND`、`RANGE_NOT_FOUND` | 资源或请求范围不存在 |
 | 409 | `JOB_NOT_READY` | 任务尚未成功 |
 | 413 | `FILE_TOO_LARGE` | 文件超过限制 |
-| 502 | `LLM_REQUEST_FAILED`、`EMPTY_MODEL_OUTPUT` | 模型服务异常 |
+| 502 | `LLM_REQUEST_FAILED`、`EMPTY_MODEL_OUTPUT`、`VANGUARD_OUTPUT_INVALID`、`VANGUARD_LAYOUT_UNRESOLVED`、`OUTPUT_PROTOCOL_ERROR` | 模型服务、布局或知识树协议异常 |
 | 504 | `LLM_TIMEOUT` | 模型请求超时 |
 
 ## 前端轮询示例

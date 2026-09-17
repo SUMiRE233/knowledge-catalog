@@ -46,6 +46,7 @@ class PreparedDocument(BaseModel):
 
 class ModelAnalysisRequest(BaseModel):
     instruction: str
+    operation: Literal["vanguard", "vanguard_merge", "extract", "merge"] = "extract"
     pages: list[PreparedPage] = Field(default_factory=list)
     batch_number: int | None = None
     total_batches: int | None = None
@@ -103,7 +104,17 @@ class GenerationResult(BaseModel):
 
 JobStatus = Literal["pending", "processing", "succeeded", "failed"]
 JobStage = Literal[
-    "upload", "inspect", "render", "preprocess", "analyze", "merge", "parse", "validate", "publish"
+    "upload",
+    "inspect",
+    "render",
+    "preprocess",
+    "vanguard",
+    "compose",
+    "analyze",
+    "merge",
+    "parse",
+    "validate",
+    "publish",
 ]
 
 

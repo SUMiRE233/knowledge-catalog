@@ -1,22 +1,24 @@
 {
-  "evaluation_id": "public-synthetic-gold-v1",
+  "evaluation_id": "synthetic-junior-math-gold-v1-evaluation",
   "evaluated_at": "2026-09-17",
   "dataset": {
     "type": "synthetic",
     "fixture": "fixtures/public/synthetic_curriculum.pdf",
-    "gold": "evaluation/gold/public_fixture_gold.jsonl",
-    "assertions": 40
+    "regression_reference": "evaluation/gold/public_fixture_gold.jsonl",
+    "gold_set_id": "synthetic-junior-math-gold-v1",
+    "approval_status": "human_approved_synthetic_gold",
+    "assertions": 41
   },
   "execution": {
     "runs": 1,
     "semantic_executor": "deterministic_test_double",
-    "pipeline": "PDF render -> parser -> range -> guard -> publish",
-    "model_request_count": 1,
+    "pipeline": "PDF render -> Vanguard -> LayoutProfile review -> PromptComposer -> Extractor -> protocol review -> parser -> range -> guard -> publish",
+    "model_request_count": 3,
     "image_count": 2
   },
   "metrics": {
-    "assertion_count": 40,
-    "passed_count": 40,
+    "assertion_count": 41,
+    "passed_count": 41,
     "failed_count": 0,
     "accuracy": 1.0,
     "failures": []
@@ -25,5 +27,5 @@
     "warning_count": 0,
     "error_count": 0
   },
-  "claim_boundary": "This measures deterministic pipeline and contract reproducibility on a synthetic fixture; it does not measure real multimodal model accuracy."
+  "claim_boundary": "This measures deterministic pipeline and contract reproducibility on a synthetic fixture; it does not measure real multimodal model accuracy. Human approval status: human_approved_synthetic_gold."
 }

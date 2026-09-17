@@ -28,6 +28,64 @@ class PublicFixtureModel:
 
     async def analyze(self, request):
         self.requests.append(request)
+        if request.operation == "vanguard":
+            profile = {
+                "schema_version": "1.0",
+                "source_page_count": 2,
+                "languages": ["zh"],
+                "document_identity": {
+                    "root_labels": ["合成初中数学课程纲要（公开评测版）"],
+                    "subject": "数学",
+                    "education_stage": "初中",
+                    "grade_labels": ["七年级"],
+                    "volume_labels": ["上册", "下册"],
+                    "evidence_pages": [1, 2],
+                },
+                "range_labels": [
+                    {"label": "七年级上册", "evidence_pages": [1]},
+                    {"label": "七年级下册", "evidence_pages": [2]},
+                ],
+                "layouts": [
+                    {
+                        "layout_id": "synthetic_table",
+                        "page_ranges": [{"start": 1, "end": 2}],
+                        "layout_kind": "table",
+                        "node_levels": [
+                            {
+                                "level": 1,
+                                "role_name": "单元",
+                                "document_label": "单元",
+                                "visual_cues": ["表格第一列"],
+                            },
+                            {
+                                "level": 2,
+                                "role_name": "主题",
+                                "document_label": "课程内容",
+                                "visual_cues": ["表格第二列"],
+                            },
+                        ],
+                        "scope_sources": [
+                            {
+                                "document_label": "内容范围",
+                                "attaches_to_level": 2,
+                                "visual_cues": ["表格第三列"],
+                            }
+                        ],
+                        "excluded_regions": [
+                            {
+                                "document_label": "学习目标",
+                                "reason": "不是课程知识目录",
+                            }
+                        ],
+                        "continuation_rules": [],
+                    }
+                ],
+                "document_exclusions": [],
+                "unresolved": [],
+            }
+            return ModelAnalysisResponse(
+                text=json.dumps(profile, ensure_ascii=False), finish_reason="stop"
+            )
         return ModelAnalysisResponse(text=self.text, finish_reason="stop")
 
 

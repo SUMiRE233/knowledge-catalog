@@ -22,3 +22,7 @@ PDF viewers. On systems without a supported font in a standard location, set
 The fixture exercises PDF validation, page rendering, auxiliary-text extraction,
 protocol parsing, range resolution, validation and artifact publication. Because the
 semantic response is frozen, it does not measure live-model accuracy.
+
+Both pages are uploaded as one PDF and therefore form one published tree asset. The
+expected tree has exactly one document root; `七年级上册` and `七年级下册` are range nodes
+under that root, not sibling roots.

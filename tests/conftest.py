@@ -1,3 +1,5 @@
+import json
+import re
 from io import BytesIO
 
 import fitz
@@ -20,13 +22,69 @@ END_KNOWLEDGE_TREE"""
 
 
 class FakeModel:
-    def __init__(self, text=GOOD_OUTPUT, finish_reason="stop"):
+    def __init__(self, text=GOOD_OUTPUT, finish_reason="stop", layout_profile=None):
         self.text = text
         self.finish_reason = finish_reason
+        self.layout_profile = layout_profile
         self.requests = []
 
     async def analyze(self, request):
         self.requests.append(request)
+        if request.operation == "vanguard":
+            total_match = re.search(r"整份 PDF 共 (\d+) 页", request.instruction)
+            total = int(total_match.group(1)) if total_match else len(request.pages)
+            pages = [page.page_number for page in request.pages]
+            profile = self.layout_profile or {
+                "schema_version": "1.0",
+                "source_page_count": total,
+                "languages": ["zh"],
+                "document_identity": {
+                    "root_labels": ["初一上册"],
+                    "subject": "数学",
+                    "education_stage": "初中",
+                    "grade_labels": ["初一"],
+                    "volume_labels": ["上册"],
+                    "evidence_pages": [pages[0]],
+                },
+                "range_labels": [],
+                "layouts": [
+                    {
+                        "layout_id": f"layout_{pages[0]}",
+                        "page_ranges": [{"start": min(pages), "end": max(pages)}],
+                        "layout_kind": "table",
+                        "node_levels": [
+                            {
+                                "level": 1,
+                                "role_name": "章",
+                                "document_label": "课程内容",
+                                "visual_cues": ["测试布局"],
+                            }
+                        ],
+                        "scope_sources": [],
+                        "excluded_regions": [],
+                        "continuation_rules": [],
+                    }
+                ],
+                "document_exclusions": [],
+                "unresolved": [],
+            }
+            return ModelAnalysisResponse(
+                text=json.dumps(profile, ensure_ascii=False), finish_reason="stop"
+            )
+        if request.operation == "vanguard_merge":
+            profiles = [json.loads(value) for value in request.merge_inputs]
+            if "最终审校器" in request.instruction:
+                return ModelAnalysisResponse(
+                    text=json.dumps(profiles[0], ensure_ascii=False),
+                    finish_reason="stop",
+                )
+            merged = profiles[0]
+            merged["layouts"] = [
+                layout for profile in profiles for layout in profile["layouts"]
+            ]
+            return ModelAnalysisResponse(
+                text=json.dumps(merged, ensure_ascii=False), finish_reason="stop"
+            )
         return ModelAnalysisResponse(text=self.text, finish_reason=self.finish_reason)
 
 

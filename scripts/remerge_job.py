@@ -4,7 +4,9 @@ import json
 from pathlib import Path
 
 from app.config import Settings
+from app.layout_profile import parse_layout_profile
 from app.llm.client import OpenAICompatibleMultimodalClient
+from app.llm.prompt_composer import compose_business_prompt
 from app.llm.prompts import (
     merge_instruction_for_profile,
     primary_hierarchy_review_instruction,
@@ -27,13 +29,30 @@ async def run(
         return 2
     batch_outputs = [path.read_text(encoding="utf-8") for path in batch_paths]
     client = OpenAICompatibleMultimodalClient(Settings())
-    _, merge_prompt = prompts_for_profile(document_profile)
-    merge_prompt = merge_instruction_for_profile(
-        document_profile, merge_prompt, batch_outputs
+    prepared = json.loads(
+        (job_dir / "output" / "prepared_document.json").read_text(encoding="utf-8")
     )
+    layout_profile_path = job_dir / "output" / "layout_profile.json"
+    if layout_profile_path.is_file():
+        profile = parse_layout_profile(
+            layout_profile_path.read_text(encoding="utf-8"),
+            len(prepared["pages"]),
+        )
+        merge_prompt = compose_business_prompt(profile).merge
+        merge_mode = "layout_profile"
+    else:
+        _, merge_prompt = prompts_for_profile(document_profile)
+        merge_prompt = merge_instruction_for_profile(
+            document_profile, merge_prompt, batch_outputs
+        )
+        merge_mode = "legacy_document_profile"
     try:
         response = await client.analyze(
-            ModelAnalysisRequest(instruction=merge_prompt, merge_inputs=batch_outputs)
+            ModelAnalysisRequest(
+                operation="merge",
+                instruction=merge_prompt,
+                merge_inputs=batch_outputs,
+            )
         )
     except ServiceError as exc:
         print(f"ERROR: {exc.code}: {exc.message}")
@@ -41,22 +60,21 @@ async def run(
     if response.finish_reason in {"length", "max_tokens"}:
         print("ERROR: merged output truncated")
         return 4
-    if document_profile == "primary_dskp_sjkc":
+    if merge_mode == "legacy_document_profile" and document_profile == "primary_dskp_sjkc":
         review_instruction = primary_hierarchy_review_instruction(
             response.text, primary_level_2_boundaries(batch_outputs)
         )
         if review_instruction:
             response = await client.analyze(
                 ModelAnalysisRequest(
-                    instruction=review_instruction, merge_inputs=[response.text]
+                    operation="merge",
+                    instruction=review_instruction,
+                    merge_inputs=[response.text],
                 )
             )
             if response.finish_reason in {"length", "max_tokens"}:
                 print("ERROR: reviewed output truncated")
                 return 4
-    prepared = json.loads(
-        (job_dir / "output" / "prepared_document.json").read_text(encoding="utf-8")
-    )
     source_name = prepared["source_file_name"]
     parsed = FormattedTextParser().parse(
         response.text,
@@ -83,6 +101,7 @@ async def run(
         json.dumps(
             {
                 "batch_count": len(batch_outputs),
+                "merge_mode": merge_mode,
                 "finish_reason": response.finish_reason,
                 "selected_range": resolution.tree.selected_range,
                 "resolution_method": resolution.method,

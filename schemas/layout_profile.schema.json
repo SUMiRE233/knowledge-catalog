@@ -1,0 +1,223 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.invalid/schemas/layout-profile-1.0.json",
+  "title": "Knowledge Catalog LayoutProfile",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "source_page_count",
+    "languages",
+    "document_identity",
+    "range_labels",
+    "layouts",
+    "document_exclusions",
+    "unresolved"
+  ],
+  "properties": {
+    "schema_version": {"const": "1.0"},
+    "source_page_count": {"type": "integer", "minimum": 1},
+    "languages": {
+      "type": "array",
+      "minItems": 1,
+      "items": {"type": "string"}
+    },
+    "document_identity": {"$ref": "#/$defs/documentIdentity"},
+    "range_labels": {
+      "type": "array",
+      "items": {"$ref": "#/$defs/rangeLabel"}
+    },
+    "layouts": {
+      "type": "array",
+      "minItems": 1,
+      "items": {"$ref": "#/$defs/layout"}
+    },
+    "document_exclusions": {
+      "type": "array",
+      "items": {"$ref": "#/$defs/documentExclusion"}
+    },
+    "unresolved": {
+      "type": "array",
+      "items": {"$ref": "#/$defs/unresolved"}
+    }
+  },
+  "$defs": {
+    "documentIdentity": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "root_labels",
+        "subject",
+        "education_stage",
+        "grade_labels",
+        "volume_labels",
+        "evidence_pages"
+      ],
+      "properties": {
+        "root_labels": {
+          "type": "array",
+          "items": {"type": "string", "minLength": 1},
+          "maxItems": 1
+        },
+        "subject": {"type": ["string", "null"]},
+        "education_stage": {"type": ["string", "null"]},
+        "grade_labels": {"type": "array", "items": {"type": "string"}},
+        "volume_labels": {"type": "array", "items": {"type": "string"}},
+        "evidence_pages": {
+          "type": "array",
+          "items": {"type": "integer", "minimum": 1}
+        }
+      }
+    },
+    "pageRange": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["start", "end"],
+      "properties": {
+        "start": {"type": "integer", "minimum": 1},
+        "end": {"type": "integer", "minimum": 1}
+      }
+    },
+    "rangeLabel": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["label", "evidence_pages"],
+      "properties": {
+        "label": {"type": "string", "minLength": 1, "maxLength": 200},
+        "evidence_pages": {
+          "type": "array",
+          "minItems": 1,
+          "items": {"type": "integer", "minimum": 1}
+        }
+      }
+    },
+    "nodeLevel": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["level", "role_name", "document_label", "visual_cues"],
+      "properties": {
+        "level": {"type": "integer", "minimum": 1, "maximum": 12},
+        "role_name": {"type": "string", "minLength": 1, "maxLength": 100},
+        "document_label": {"type": ["string", "null"]},
+        "visual_cues": {"type": "array", "items": {"type": "string"}}
+      }
+    },
+    "scopeSource": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["document_label", "attaches_to_level", "visual_cues"],
+      "properties": {
+        "document_label": {"type": ["string", "null"]},
+        "attaches_to_level": {"type": "integer", "minimum": 1, "maximum": 12},
+        "visual_cues": {"type": "array", "items": {"type": "string"}}
+      }
+    },
+    "excludedRegion": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["document_label", "reason"],
+      "properties": {
+        "document_label": {"type": "string", "minLength": 1},
+        "reason": {"type": "string", "minLength": 1}
+      }
+    },
+    "continuationRule": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "description"],
+      "properties": {
+        "kind": {
+          "enum": [
+            "merged_cell_continues",
+            "blank_cell_inherits_previous",
+            "page_break_continues",
+            "repeated_header",
+            "section_header_resets",
+            "parallel_items",
+            "other_visual_relation"
+          ]
+        },
+        "description": {"type": "string", "minLength": 1}
+      }
+    },
+    "layout": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "layout_id",
+        "page_ranges",
+        "layout_kind",
+        "node_levels",
+        "scope_sources",
+        "excluded_regions",
+        "continuation_rules"
+      ],
+      "properties": {
+        "layout_id": {
+          "type": "string",
+          "pattern": "^[A-Za-z][A-Za-z0-9_-]{0,63}$"
+        },
+        "page_ranges": {
+          "type": "array",
+          "minItems": 1,
+          "items": {"$ref": "#/$defs/pageRange"}
+        },
+        "layout_kind": {"enum": ["table", "list", "hierarchy", "mixed", "other"]},
+        "node_levels": {
+          "type": "array",
+          "items": {"$ref": "#/$defs/nodeLevel"}
+        },
+        "scope_sources": {
+          "type": "array",
+          "items": {"$ref": "#/$defs/scopeSource"}
+        },
+        "excluded_regions": {
+          "type": "array",
+          "items": {"$ref": "#/$defs/excludedRegion"}
+        },
+        "continuation_rules": {
+          "type": "array",
+          "items": {"$ref": "#/$defs/continuationRule"}
+        }
+      }
+    },
+    "documentExclusion": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["label", "page_numbers"],
+      "properties": {
+        "label": {"type": "string", "minLength": 1},
+        "page_numbers": {
+          "type": "array",
+          "items": {"type": "integer", "minimum": 1}
+        }
+      }
+    },
+    "unresolved": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["code", "page_numbers", "description"],
+      "properties": {
+        "code": {
+          "enum": [
+            "CONTENT_REGION_NOT_FOUND",
+            "NODE_HIERARCHY_UNCLEAR",
+            "REGION_ROLE_CONFLICT",
+            "CONTINUATION_CONFLICT",
+            "PAGE_UNREADABLE",
+            "EXPLICIT_RANGE_UNCLEAR",
+            "SCOPE_SOURCE_UNCLEAR",
+            "EXCLUSION_LABEL_UNCLEAR",
+            "MINOR_VISUAL_CUE_UNCLEAR",
+            "ROOT_IDENTITY_CONFLICT"
+          ]
+        },
+        "page_numbers": {
+          "type": "array",
+          "items": {"type": "integer", "minimum": 1}
+        },
+        "description": {"type": "string", "minLength": 1}
+      }
+    }
+  }
+}

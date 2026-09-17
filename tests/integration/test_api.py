@@ -32,7 +32,9 @@ def test_standard_pdf_upload_result_and_artifacts(client, fake_model):
     result = client.get(response.json()["result_url"])
     assert result.status_code == 200
     assert result.json()["knowledge_tree"]["children"][0]["name"] == "初一上册"
+    assert fake_model.requests[0].operation == "vanguard"
     assert fake_model.requests[0].pages[0].image_path.suffix == ".png"
+    assert fake_model.requests[1].operation == "extract"
     artifact = client.get(
         f"/api/v1/knowledge-trees/jobs/{response.json()['job_id']}/artifacts/knowledge_tree.json"
     )
@@ -41,9 +43,15 @@ def test_standard_pdf_upload_result_and_artifacts(client, fake_model):
         f"/api/v1/knowledge-trees/jobs/{response.json()['job_id']}/artifacts/run_report.json"
     ).json()
     assert report["schema_version"] == "1.0.0"
-    assert report["generator_version"] == "0.2.0"
+    assert report["generator_version"] == "0.3.0"
     assert report["generation_source"]["filename"] == "course.pdf"
     assert len(report["generation_source"]["sha256"]) == 64
+    assert report["layout_profile_schema_version"] == "1.0"
+    assert len(report["business_prompt_sha256"]) == 64
+    for name in ("vanguard_output.txt", "layout_profile.json", "business_prompt.txt"):
+        assert client.get(
+            f"/api/v1/knowledge-trees/jobs/{response.json()['job_id']}/artifacts/{name}"
+        ).status_code == 200
 
 
 def test_png_upload(client):
@@ -51,7 +59,7 @@ def test_png_upload(client):
     assert status(client, response)["status"] == "succeeded"
 
 
-def test_primary_dskp_profile_is_forwarded_to_model(client, fake_model, settings):
+def test_existing_document_profile_still_uses_vanguard_prompt(client, fake_model, settings):
     response = submit(
         client,
         png_bytes(),
@@ -60,12 +68,73 @@ def test_primary_dskp_profile_is_forwarded_to_model(client, fake_model, settings
         document_profile="primary_dskp_sjkc",
     )
     assert status(client, response)["status"] == "succeeded"
-    assert "马来西亚华文小学数学 DSKP" in fake_model.requests[0].instruction
+    assert fake_model.requests[0].operation == "vanguard"
+    assert fake_model.requests[1].operation == "extract"
+    assert "layout_profile_json" in fake_model.requests[1].instruction
     output = settings.runtime_dir / "jobs" / response.json()["job_id"] / "output"
     report = json.loads((output / "run_report.json").read_text(encoding="utf-8"))
     assert report["document_profile"] == "primary_dskp_sjkc"
     result = client.get(response.json()["result_url"]).json()
-    assert result["knowledge_tree"]["title"] == "马来西亚华文小学数学初一上册知识目录"
+    assert result["knowledge_tree"]["title"] == "初一上册知识目录"
+
+
+def test_unknown_identity_uses_fixed_root_and_specific_range_is_not_guessed(tmp_path):
+    unknown_profile = {
+        "schema_version": "1.0",
+        "source_page_count": 1,
+        "languages": ["zh"],
+        "document_identity": {
+            "root_labels": [],
+            "subject": None,
+            "education_stage": None,
+            "grade_labels": [],
+            "volume_labels": [],
+            "evidence_pages": [],
+        },
+        "range_labels": [],
+        "layouts": [
+            {
+                "layout_id": "layout_1",
+                "page_ranges": [{"start": 1, "end": 1}],
+                "layout_kind": "list",
+                "node_levels": [
+                    {
+                        "level": 1,
+                        "role_name": "课程单元",
+                        "document_label": None,
+                        "visual_cues": ["标题层级"],
+                    }
+                ],
+                "scope_sources": [],
+                "excluded_regions": [],
+                "continuation_rules": [],
+            }
+        ],
+        "document_exclusions": [],
+        "unresolved": [],
+    }
+    output = """BEGIN_KNOWLEDGE_TREE
+LEVEL 1 | 未知学科
+LEVEL 2 | 函数
+END_KNOWLEDGE_TREE"""
+    settings = Settings(runtime_dir=tmp_path, llm_api_key="x", llm_model="x")
+    with TestClient(create_app(settings, FakeModel(output, layout_profile=unknown_profile))) as api:
+        all_response = submit(api, png_bytes(), "unknown.png", "image/png")
+        assert status(api, all_response)["status"] == "succeeded"
+        result = api.get(all_response.json()["result_url"]).json()["knowledge_tree"]
+        assert result["title"] == "未知学科知识目录"
+        assert result["children"][0]["name"] == "未知学科"
+
+        ranged = submit(
+            api,
+            png_bytes(),
+            "unknown.png",
+            "image/png",
+            **{"range": "初一上册"},
+        )
+        ranged_state = status(api, ranged)
+        assert ranged_state["status"] == "failed"
+        assert ranged_state["error"]["code"] == "RANGE_NOT_FOUND"
 
 
 def test_unknown_document_profile_is_rejected(client):
@@ -181,6 +250,23 @@ def test_model_output_failures(tmp_path, model, code):
         state = status(client, response)
     assert state["status"] == "failed"
     assert state["error"]["code"] == code
+
+
+def test_final_tree_rejects_multiple_level_one_roots(tmp_path):
+    output = """BEGIN_KNOWLEDGE_TREE
+LEVEL 1 | 初一上册
+LEVEL 2 | 数与式
+LEVEL 1 | 初一下册
+LEVEL 2 | 方程
+END_KNOWLEDGE_TREE"""
+    settings = Settings(runtime_dir=tmp_path, llm_api_key="x", llm_model="x")
+    with TestClient(create_app(settings, FakeModel(output))) as client:
+        response = submit(client, png_bytes(), "x.png", "image/png")
+        state = status(client, response)
+
+    assert state["status"] == "failed"
+    assert state["error"]["code"] == "OUTPUT_PROTOCOL_ERROR"
+    assert "只能发布一个 LEVEL 1" in state["error"]["message"]
 
 
 def test_unconfigured_model_job(tmp_path):

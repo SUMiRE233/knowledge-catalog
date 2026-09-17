@@ -6,16 +6,22 @@
 它不是知识图谱、题库、题型/错因/能力体系、学生画像或跨地区权威知识库。每次上传都会生成
 新树，ID 只在本树内有效。
 
+代码与仓库内明确标记的公开合成数据采用 [MIT License](LICENSE)。仓库地址：
+`git@github.com:SUMiRE233/knowledge-catalog.git`。私有课程材料、真实模型输出、密钥和运行缓存
+不属于许可发布内容，并由 `.gitignore` 与仓库卫生检查阻止进入版本控制。
+
 ## 当前发布与完成状态
 
-当前可审计版本为 `0.2.0`，稳定目录发布为
-`releases/v1.0.0/KT_MICSS_junior.json`。项目已完成公开 fixture、40 条金标准、
-真实 badcase 追溯、稳定 schema、版本化 manifest 和下游兼容说明，进入维护状态。
+当前生成器版本为 `0.3.0`，稳定目录发布仍为
+`releases/v1.0.0/KT_MICSS_junior.json`。项目已完成公开 fixture、课程负责人审批的 41 条
+公开合成金标准、真实 badcase 追溯、稳定知识树 schema、版本化 manifest 和下游兼容说明。
+合成金标准状态为 `human_approved_synthetic_gold`；它闭合工程复现和数据契约验收，但不代表
+真实多模态模型在未见课程 PDF 上的泛化准确率。
 
 | 状态 | 内容 |
 |---|---|
-| 已实现 | PDF/PNG/JPEG/WEBP 接入；PDF 视觉优先渲染；多图模型调用；分批与合并；协议解析；range 筛选；OutputGuard；异步 API；公开合成 fixture；版本化发布 |
-| 部分实现 | 扫描 PDF 和普通图片可进入视觉链路，但真实设备、旋转、倾斜和模糊组合覆盖有限；DSKP profile 只适用于已审核的文档族 |
+| 已实现 | PDF/PNG/JPEG/WEBP 接入；PDF 视觉优先渲染；Vanguard 布局侦察；动态业务提示词；多图模型调用；分批与合并；协议解析；range 筛选；OutputGuard；异步 API；公开合成 fixture；版本化发布 |
+| 部分实现 | 扫描 PDF 和普通图片可进入视觉链路，但真实设备、旋转、倾斜和模糊组合覆盖有限；真实模型泛化仍缺少未见 PDF 盲测 |
 | 设计中 | OCR 文本降级、持久化 JobRepository、共享对象存储、多实例任务执行 |
 | 明确不做 | 通用知识图谱、题目/错因分类、学生画像、相似题检索、attempt-organizer 运行逻辑 |
 
@@ -33,13 +39,15 @@ python scripts/evaluate_public_fixture.py
 ```
 
 演示使用两页完全合成的课程表和确定性模型替身，真实执行 PDF 校验、逐页渲染、文本层提取、
-协议解析、range、OutputGuard 和 artifact 发布。当前冻结评测为 40/40、0 warning、0 error。
+Vanguard、协议解析、range、OutputGuard 和 artifact 发布。当前回归评测为 41/41、
+0 warning、0 error。
 该数字只证明流水线与契约可复现，不代表真实多模态模型准确率。数据与方法见
 `fixtures/public/README.md` 和 `evaluation/README.md`。
 
 ### 版本化目录与下游契约
 
 - 树 schema：`schemas/knowledge_tree.schema.json`，版本 `1.0.0`；
+- 布局 schema：`schemas/layout_profile.schema.json`，版本 `1.0`；
 - 发布 manifest schema：`schemas/release_manifest.schema.json`，版本 `1.0.0`；
 - 当前目录：`releases/v1.0.0/KT_MICSS_junior.json`；
 - 来源、摘要、计数和限制：`releases/v1.0.0/KT_MICSS_junior.manifest.json`；
@@ -57,7 +65,7 @@ python scripts/evaluate_public_fixture.py
 
 ### 评测、badcase 与来源边界
 
-40 条公开金标准包含 32 条层级/节点断言和 8 条 scope 精确断言。真实文档运行中发现的
+负责人已批准的 41 条公开合成金标准包含 33 条层级/节点断言和 8 条 scope 精确断言。真实文档运行中发现的
 年级无证据默认、学习目标 schema 劣化、高中切片缺失分配页和 DSKP 跨批层级漂移，均记录在
 `docs/BADCASES.md`，并追溯到规则、提示词、schema 或人工发布边界。
 
@@ -79,20 +87,31 @@ OCR 仅是未来/显式配置的文本降级位置，第一版不内置 OCR 引�
 
 ## 流程
 
-`HTTP 上传 → 任务 → InputAdapter → 页面图片 → 多模态模型分批分析 → 可选文本合并调用 →
-FormattedTextParser → range 树筛选 → OutputGuard → artifacts`
+`HTTP 上传 → 任务 → InputAdapter → 页面图片 → Vanguard 布局侦察 → LayoutProfile 校验 →
+PromptComposer → 多模态模型分批抽取 → 可选文本合并调用 → FormattedTextParser →
+range 树筛选 → OutputGuard → artifacts`
 
-长文档按 `LLM_MAX_IMAGES_PER_REQUEST` 顺序分批。每批包含真实页码、批次信息、上一批路径摘要；
-多批时模型以各批协议文本进行最终合并，不再上传所有图片。合并提示禁止创造、改写、扩写或
-删除明确课程内容。
+Vanguard 先识别节点层级、scope 来源、排除区域和跨页关系，只返回严格 JSON，不抽取知识点。
+系统校验并规范化 LayoutProfile，再将它嵌入固定通用提示词生成实际 BusinessPrompt。
+多批 Profile 会经过合并和一次纯文本审校；知识树合并后也进行一次只允许修正协议、范围挂载
+和 scope 归属的纯文本审校，随后仍由 Parser 与 OutputGuard 独立裁决。
+长文档继续按 `LLM_MAX_IMAGES_PER_REQUEST` 顺序分批；Vanguard 分批结果只在同一 PDF 内合并，
+知识抽取批次包含真实页码和上一批路径摘要。合并提示禁止创造、改写、扩写或删除明确课程内容。
+
+一次 API 请求必须只上传一份逻辑上应当被统合的 PDF，并且只发布一个知识目录资产。上游负责
+确保这份 PDF 的所有页面属于同一课程目录；不要把互不相关、原本应独立发布的课程材料拼成一个
+请求。分批只是同一 PDF 的内部传输方式：子请求可以重复同一个总根或暂时看不到总标题，最终
+合并审校后必须且只能有一个 `LEVEL 1`。年级、册别和学期属于该根下的范围节点。页面没有明确
+总身份时仍生成唯一技术根 `未知学科`；Vanguard 无法解决的根身份冲突会阻止发布。
 
 模型必须只输出：
 
 ```text
 BEGIN_KNOWLEDGE_TREE
-LEVEL 1 | 节点名称
-LEVEL 2 | 大章名称
-LEVEL 3 | 子节点名称
+LEVEL 1 | 整份 PDF 的唯一总根
+LEVEL 2 | 年级、册别或学期范围
+LEVEL 3 | 大章名称
+LEVEL 4 | 子节点名称
 SCOPE | 课程内容原文
 UNRESOLVED | 3 | 无法可靠识别的原因
 END_KNOWLEDGE_TREE
@@ -106,19 +125,22 @@ END_KNOWLEDGE_TREE
 它不猜章节、不拆 scope、不合并相似节点、不删除“应用问题”等内容。range 在完整目录生成后
 按模型节点、文本/OCR 年级证据、学段前缀和安全默认值依次解析。
 
-### 谨慎的年级与学段判定
+### 谨慎的文档身份判定
 
-年级分配采用证据优先策略，不会默认归入“初一上”：
+文档身份采用页面证据优先策略，不会根据公式、章节名称、上传文件名或学科常识推断：
 
 1. 优先匹配模型明确输出的年级、学期或册别节点；
 2. 模型没有具体年级节点时，只在 PDF 文本层或 OCR 辅助文本中存在唯一、明确年级证据时使用；
 3. 只有“初中/高中”学段证据或同学段模型节点时，降级为学段前缀匹配，不推断具体年级；
-4. 完全没有证据时使用 `DEFAULT_GRADE_RANGE`，默认值为“全部”。
+4. 完全没有可作为一级根节点的身份信息时，固定输出技术根节点“未知学科”；
+5. 请求具体 range 但只能得到“未知学科”时返回 `RANGE_NOT_FOUND`，不得猜测年级。
 
 非精确降级会在 `validation_report.json` 中写入 `RANGE_FALLBACK_APPLIED`，并在
 `run_report.json` 中记录 `selected_range`、`range_resolution_method` 和 `range_evidence`。
-模型提示明确禁止在无证据时生成“初一上”或其他具体年级。小学 DSKP 标题由模型识别出的
-年级生成稳定名称，不使用上传文件的副本编号或版本后缀。
+模型提示明确禁止在无证据时生成“初一上”或其他具体年级。“未知学科”是约定的技术容器，
+不参与 PDF 文本层来源匹配。
+目录页简称和详细页全称通过现有配置化 range 别名规范化，例如“初一上”统一为“初一上册”；
+这只处理身份边界名称，不参与课程内容、知识点或父子关系判断。
 
 OutputGuard 检查空树/空名、重复 ID/路径、协议未知行、孤立或重复 scope/objective、禁止字段、名称与
 scope/objective 长度、解释文本、Markdown/JSON、自我说明、文本层来源匹配、UNRESOLVED、协议边界、
@@ -149,7 +171,7 @@ artifact。
 - `GET /health`
 - `POST /api/v1/knowledge-trees/jobs`：multipart `file`、`range`（默认“全部”）、
   `enhance_images`（默认 true）、`use_ocr_fallback`（默认 false）、
-  `document_profile`（`general` 或 `primary_dskp_sjkc`），返回 202
+  `document_profile`（兼容字段，仍接受 `general` 或 `primary_dskp_sjkc`；两者均执行 Vanguard），返回 202
 - `GET /api/v1/knowledge-trees/jobs/{job_id}`
 - `GET /api/v1/knowledge-trees/jobs/{job_id}/result`
 - `GET /api/v1/knowledge-trees/jobs/{job_id}/artifacts/{artifact_name}`
@@ -171,9 +193,8 @@ python scripts/generate_primary_knowledge_trees.py \
   "/path/to/DSKP_Matematik_Tahun_2.pdf"
 ```
 
-脚本使用 `primary_dskp_sjkc` 文档画像，以“年级 → 学习领域 → 课题 →
-内容标准”建树，将对应学习标准放入 `scope`。表现标准、级别诠释、
-课题目标、人文与价值观、活动建议、评估和行政内容均排除。
+脚本仍传入兼容值 `primary_dskp_sjkc`，但布局、层级、scope 来源和排除区域均由当前 PDF
+的 Vanguard 结果决定，不再切换到一套静态课程模板提示词。
 
 已审核的一至六年级树可以合并为一棵小学树，年级仍是严格边界，不跨年级合并同名节点：
 
@@ -192,9 +213,10 @@ python scripts/merge_primary_knowledge_trees.py \
 下游作答整理请求使用无扩展名逻辑名称：`"knowledge_tree_file": "KT_MICSS_primary"`。
 接收端负责解析为内部文件 `KT_MICSS_primary.json`。
 
-公开 artifact 固定为 `knowledge_tree.json`、`knowledge_catalog.txt`、`model_output.txt`、
-`validation_report.json`、`run_report.json`、`prepared_document.json`。服务器路径不会返回，
-页面图片默认不通过公共 API 暴露。文件位于 `runtime/jobs/{job_id}/output/`。
+公开 artifact 包括原有知识树、目录、模型输出、验证/运行报告和准备文档，并新增
+`vanguard_output.txt`、`layout_profile.json`、`business_prompt.txt`，用于审计实际布局判断与
+提示词组合。服务器路径不会返回，页面图片默认不通过公共 API 暴露。
+文件位于 `runtime/jobs/{job_id}/output/`。
 
 ## 测试与真实验收
 

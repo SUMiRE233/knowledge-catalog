@@ -1,0 +1,28 @@
+{
+  "gold_set_id": "synthetic-junior-math-gold-v1",
+  "fixture_type": "synthetic",
+  "assertion_count": 41,
+  "approval_status": "human_approved_synthetic_gold",
+  "reviewer": "sumire",
+  "approved_at": "2026-09-17",
+  "approval_method": "explicit_owner_confirmation",
+  "frozen_files": [
+    {
+      "path": "fixtures/public/synthetic_curriculum.pdf",
+      "sha256": "368d6f049338966151791cb89c67b7b8a2488f08ca53f4f53a530c7c0a17a27b"
+    },
+    {
+      "path": "fixtures/public/synthetic_curriculum_spec.json",
+      "sha256": "b04d2c70663f5c1cc5f8d238c45a6859e5317fe4311adf360b16e63d2971db4d"
+    },
+    {
+      "path": "fixtures/public/expected_model_output.txt",
+      "sha256": "ac2f24063beaf0802d16d3dd7f6dd34cf893911d7d6e4ec218f20d0aa62fcf13"
+    },
+    {
+      "path": "evaluation/gold/public_fixture_gold.jsonl",
+      "sha256": "ff6d88da2a745ff9ff85020f146b0459ae14dbfd68ec243b4be98cc00cb7f460"
+    }
+  ],
+  "claim_boundary": "验证公开合成输入上的层级、scope、协议和发布契约；不代表真实多模态模型在真实课程 PDF 上的泛化准确率。"
+}

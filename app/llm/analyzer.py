@@ -24,8 +24,13 @@ class DocumentAnalyzer:
         document_profile: str = "general",
         batch_output_callback: Callable[[int, str], Awaitable[None]] | None = None,
         progress_callback: Callable[[str, int, int], Awaitable[None]] | None = None,
+        analysis_prompt_override: str | None = None,
+        merge_prompt_override: str | None = None,
+        review_prompt_override: str | None = None,
     ) -> tuple[str, list[str]]:
-        analysis_prompt, merge_prompt = prompts_for_profile(document_profile)
+        default_analysis_prompt, default_merge_prompt = prompts_for_profile(document_profile)
+        analysis_prompt = analysis_prompt_override or default_analysis_prompt
+        merge_prompt = merge_prompt_override or default_merge_prompt
         page_batches = batches(document.pages, self.settings.llm_max_images_per_request)
         outputs: list[str] = []
         previous = ""
@@ -33,6 +38,7 @@ class DocumentAnalyzer:
         for number, pages in enumerate(page_batches, 1):
             response = await self.client.analyze(
                 ModelAnalysisRequest(
+                    operation="extract",
                     instruction=analysis_prompt,
                     pages=pages,
                     batch_number=number,
@@ -48,23 +54,50 @@ class DocumentAnalyzer:
                 await progress_callback("analyze", number, len(page_batches))
             previous = self._updated_path_summary(response.text, path_by_level, previous)
         if len(outputs) == 1:
-            return outputs[0], outputs
+            if review_prompt_override is None:
+                return outputs[0], outputs
+            reviewed = await self.client.analyze(
+                ModelAnalysisRequest(
+                    operation="merge",
+                    instruction=review_prompt_override,
+                    merge_inputs=outputs,
+                )
+            )
+            self._check_response(reviewed.text, reviewed.finish_reason)
+            return reviewed.text, outputs
         if progress_callback:
             await progress_callback("merge", len(page_batches), len(page_batches))
-        merge_instruction = merge_instruction_for_profile(
-            document_profile, merge_prompt, outputs
+        merge_instruction = (
+            merge_prompt
+            if merge_prompt_override is not None
+            else merge_instruction_for_profile(document_profile, merge_prompt, outputs)
         )
         merged = await self.client.analyze(
-            ModelAnalysisRequest(instruction=merge_instruction, merge_inputs=outputs)
+            ModelAnalysisRequest(
+                operation="merge",
+                instruction=merge_instruction,
+                merge_inputs=outputs,
+            )
         )
         self._check_response(merged.text, merged.finish_reason)
-        if document_profile == "primary_dskp_sjkc":
+        if review_prompt_override is not None:
+            reviewed = await self.client.analyze(
+                ModelAnalysisRequest(
+                    operation="merge",
+                    instruction=review_prompt_override,
+                    merge_inputs=[merged.text, *outputs],
+                )
+            )
+            self._check_response(reviewed.text, reviewed.finish_reason)
+            return reviewed.text, outputs
+        if document_profile == "primary_dskp_sjkc" and merge_prompt_override is None:
             review_instruction = primary_hierarchy_review_instruction(
                 merged.text, primary_level_2_boundaries(outputs)
             )
             if review_instruction:
                 merged = await self.client.analyze(
                     ModelAnalysisRequest(
+                        operation="merge",
                         instruction=review_instruction, merge_inputs=[merged.text]
                     )
                 )

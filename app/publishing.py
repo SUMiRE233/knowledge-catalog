@@ -10,6 +10,9 @@ PUBLIC_ARTIFACTS = {
     "validation_report.json",
     "run_report.json",
     "prepared_document.json",
+    "vanguard_output.txt",
+    "layout_profile.json",
+    "business_prompt.txt",
 }
 
 

@@ -1,4 +1,4 @@
-"""Evaluate the public synthetic fixture against its frozen gold candidate."""
+"""使用冻结的候选金标准评测公开合成 fixture。"""
 
 from __future__ import annotations
 
@@ -92,8 +92,8 @@ async def run_evaluation(gold_path: Path, report_path: Path, manifest_path: Path
             "runs": 1,
             "semantic_executor": "deterministic_test_double",
             "pipeline": (
-                "PDF render -> Vanguard -> LayoutProfile review -> PromptComposer -> "
-                "Extractor -> protocol review -> parser -> range -> guard -> publish"
+                "PDF 渲染 -> Vanguard -> LayoutProfile 审查 -> PromptComposer -> "
+                "抽取 -> 协议审查 -> 解析 -> 范围筛选 -> Guard -> 发布"
             ),
             "model_request_count": demo["model_request_count"],
             "image_count": demo["image_count"],
@@ -104,9 +104,8 @@ async def run_evaluation(gold_path: Path, report_path: Path, manifest_path: Path
             "error_count": demo["error_count"],
         },
         "claim_boundary": (
-            "This measures deterministic pipeline and contract reproducibility on a synthetic "
-            "fixture; it does not measure real multimodal model accuracy. Human approval "
-            f"status: {manifest['approval_status']}."
+            "本结果衡量合成 fixture 上确定性流水线和契约的可复现性，不衡量真实多模态模型准确率。"
+            f"人工审批状态：{manifest['approval_status']}。"
         ),
     }
     report_path.parent.mkdir(parents=True, exist_ok=True)

@@ -1,98 +1,78 @@
-# Real badcases and regression boundaries
+# 真实 badcase 与回归边界
 
-The cases below were observed during real curriculum runs. Private source documents and
-raw model artifacts are intentionally not committed. Each case is tied to a current
-rule, prompt, schema decision or explicit human-review boundary.
+以下案例来自真实课程材料的运行过程。仓库有意不提交私有源文档和模型原始 artifact。
+每个案例都对应当前规则、提示词、schema 决策或明确的人工审查边界。
 
-## BC-001: unsupported default collapsed content into 初一上
+## BC-001：无依据的默认值将内容归入“初一上”
 
-- Observed failure: when a document did not provide an explicit grade node, generated
-  content was assigned to `初一上` because the prompt example and fallback were treated
-  as evidence.
-- Error type: unsupported grade inference.
-- Correction: `app/range_resolution.py` now resolves exact model evidence, unique
-  text/OCR evidence, stage prefix and finally `DEFAULT_GRADE_RANGE=全部` in that order.
-  `app/llm/prompts.py` explicitly forbids inventing a concrete grade.
-- Regression evidence: `tests/integration/test_api.py::test_range_and_not_found` and
-  unit range-resolution coverage.
-- Boundary: code may select or fall back among model-produced nodes; it may not infer
-  curriculum semantics or manufacture a grade tree.
+- 观察到的失败：文档没有提供明确年级节点时，提示词示例和 fallback 被错误地当作证据，
+  生成内容被分配给 `初一上`；
+- 错误类型：无依据的年级推断；
+- 修正：`app/range_resolution.py` 现在依次使用精确模型证据、唯一文本/OCR 证据、学段前缀，
+  最后才使用 `DEFAULT_GRADE_RANGE=全部`。`app/llm/prompts.py` 明确禁止虚构具体年级；
+- 回归证据：`tests/integration/test_api.py::test_range_and_not_found` 和范围解析单元测试；
+- 边界：程序可以在模型生成的节点中选择或降级，但不能推断课程语义或制造年级树。
 
-## BC-002: learning-objective extraction degraded the original hierarchy
+## BC-002：学习目标抽取破坏原有层级
 
-- Observed failure: adding learning objectives to chapter nodes caused a real junior
-  curriculum run to collapse useful lower-level content into empty chapter nodes.
-- Error type: schema expansion changed the model's extraction priority.
-- Correction: the experiment was rolled back. The stable node schema contains only
-  `id`, `name`, `scope`, and `children`; objectives are excluded by the prompt and schema.
-- Regression evidence: `schemas/knowledge_tree.schema.json` has
-  `additionalProperties=false`; parser/guard tests reject unsupported protocol content
-  and forbidden node fields.
-- Boundary: learning objectives may be retained in separate future trace artifacts,
-  but are not part of the authoritative catalog contract.
+- 观察到的失败：为章节节点增加学习目标后，一次真实初中课程运行把有用的低层级内容压缩成了
+  空章节节点；
+- 错误类型：schema 扩张改变模型的抽取优先级；
+- 修正：该实验已回退。稳定节点 schema 只包含 `id`、`name`、`scope` 和 `children`；
+  提示词与 schema 均排除学习目标；
+- 回归证据：`schemas/knowledge_tree.schema.json` 使用 `additionalProperties=false`；
+  解析器/Guard 测试拒绝不支持的协议内容和禁止节点字段；
+- 边界：学习目标未来可以保留在独立追溯 artifact 中，但不属于权威目录契约。
 
-## BC-003: high-school page slice omitted the grade-allocation table
+## BC-003：高中页面切片遗漏年级分配表
 
-- Observed failure: a content-only page slice produced one `高中数学内容标准` root and no
-  `高一上` to `高三下` boundaries, although the full source contained a later allocation
-  table.
-- Error type: incomplete source selection, not parser data loss.
-- Correction: the reviewed tree was re-parented only after checking the authoritative
-  allocation table. The isolated publishing tool is
-  `scripts/manual_split_high_school_grades.py`; it is not part of the online pipeline.
-- Boundary: post-processing must not guess grade allocations. Missing allocation pages
-  require a new source selection or an explicitly reviewed manual publication step.
+- 观察到的失败：只包含内容的页面切片生成了单一 `高中数学内容标准` 根，却没有
+  `高一上` 至 `高三下` 边界，而完整源文件的后续页面其实包含分配表；
+- 错误类型：源材料选择不完整，而非解析器丢失数据；
+- 修正：只在核对权威分配表后才对已审查知识树重新设置父级。隔离的发布工具为
+  `scripts/manual_split_high_school_grades.py`，它不属于在线流水线；
+- 边界：后处理不得猜测年级分配。缺少分配页时，必须重新选择源材料，或执行明确经过审查的
+  人工发布步骤。
 
-## BC-004: primary DSKP batch merge promoted topics to learning areas
+## BC-004：小学 DSKP 跨批合并将课题提升为学习领域
 
-- Observed failure: cross-page batches occasionally promoted topic names to LEVEL 2 and
-  one run duplicated year-five units during final merging.
-- Error type: cross-batch hierarchy continuation and duplicate merge.
-- Correction: `PRIMARY_DSKP_MERGE_PROMPT` restricts LEVEL 2 to visually observed learning
-  area boundaries; `primary_level_2_boundaries` supplies those events to a constrained
-  review call. Reviewed per-year trees are merged by
-  `scripts/merge_primary_knowledge_trees.py`, which rejects missing/duplicate grades and
-  duplicate paths.
-- Boundary: the profile remains document-family-specific and requires human review
-  before a versioned release. It is not claimed as universal DSKP parsing.
+- 观察到的失败：跨页批次偶尔把课题名称提升为 LEVEL 2，并且一次运行在最终合并时重复了
+  五年级单元；
+- 错误类型：跨批层级延续和重复合并；
+- 修正：`PRIMARY_DSKP_MERGE_PROMPT` 将 LEVEL 2 限定为视觉上观察到的学习领域边界；
+  `primary_level_2_boundaries` 将这些事件提供给受约束的审查调用。已审查的逐年级知识树由
+  `scripts/merge_primary_knowledge_trees.py` 合并，该脚本会拒绝年级缺失/重复和路径重复；
+- 边界：该 profile 仍针对特定文档家族，版本化发布前必须人工审查，不能声称为通用 DSKP 解析。
 
-## BC-005: cover-page Vanguard batches contain no node hierarchy
+## BC-005：仅含封面的 Vanguard 批次没有节点层级
 
-- Observed failure: a batch containing only covers or publication notes correctly found
-  no knowledge-node levels, but strict partial validation rejected it before later
-  curriculum pages could establish the document structure.
-- Error type: partial-document evidence was validated as if it were a final profile.
-- Correction: partial LayoutProfiles may describe exclusion-only pages with empty
-  `node_levels`; the final merged and reviewed profile must still contain an extractable
-  hierarchy and must not retain blocking unresolved items.
-- Regression evidence: `tests/unit/test_layout_profile.py` covers partial acceptance and
-  final-profile rejection.
-- Boundary: allowing an empty partial profile does not create a fallback extractor; an
-  unresolved final layout still fails with `VANGUARD_LAYOUT_UNRESOLVED`.
+- 观察到的失败：只包含封面或出版说明的批次正确判断没有知识节点层级，但严格的局部校验在
+  后续课程页面建立文档结构前就将其拒绝；
+- 错误类型：把局部文档证据当成最终 profile 校验；
+- 修正：局部 LayoutProfile 可以用空 `node_levels` 描述纯排除页面；最终合并并审查后的 profile
+  仍必须包含可抽取层级，并且不能保留阻塞性的 unresolved 项；
+- 回归证据：`tests/unit/test_layout_profile.py` 覆盖局部接受与最终 profile 拒绝；
+- 边界：允许空的局部 profile 不等于建立 fallback 抽取器；最终布局无法解决时仍以
+  `VANGUARD_LAYOUT_UNRESOLVED` 失败。
 
-## BC-006: explicit numbered children were swallowed into a parent scope
+## BC-006：明确编号的子节点被吞入父节点 scope
 
-- Observed failure: a real visual-table run attached several explicitly numbered child
-  items to the parent `SCOPE`, producing a shallower tree and a non-leaf scope.
-- Error type: semantic-role conflict during cross-page consolidation.
-- Correction: the composed extraction/merge/review prompts require explicit child rows
-  to remain nodes. `OutputGuard` now rejects numbered-node content inside scope and any
-  scope attached to a node that also has children.
-- Regression evidence: `tests/unit/test_parser_guard.py` and the real Qwen smoke audit.
-- Boundary: code detects structural risk but does not decide how ambiguous prose should
-  be split; genuinely ambiguous rows remain a model or human-review decision.
+- 观察到的失败：一次真实视觉表格运行把多个明确编号的子项挂入父节点 `SCOPE`，导致知识树
+  层级变浅，并让非叶节点携带 scope；
+- 错误类型：跨页整合时的语义角色冲突；
+- 修正：组合后的抽取/合并/审查提示词要求明确子行保持为节点。OutputGuard 现在会拒绝 scope
+  中的编号节点内容，也会拒绝有 children 的节点携带 scope；
+- 回归证据：`tests/unit/test_parser_guard.py` 和真实 Qwen 冒烟审计；
+- 边界：程序只检测结构风险，不决定如何拆分有歧义的文本；真正有歧义的行仍由模型或人工审查裁决。
 
-## BC-007: one PDF was published as multiple sibling roots
+## BC-007：同一 PDF 被发布为多个并列根
 
-- Observed failure: the two-page public synthetic PDF placed `七年级上册` and
-  `七年级下册` at separate LEVEL 1 roots instead of ranges below one document root.
-- Error type: document ranges were misclassified as asset roots, producing a forest.
-- Correction: LayoutProfile permits at most one `root_labels` item; Vanguard and business
-  prompts treat all internal batches as parts of one PDF asset; the final Pipeline rejects
-  anything other than exactly one LEVEL 1 after merge/review. Unknown identity uses the
-  same single-root invariant through the fixed `未知学科` root.
-- Regression evidence: the public fixture now has one document root, two range nodes and
-  a 41-item candidate gold set; unit and integration tests cover multiple-profile-root and
-  multiple-final-root rejection.
-- Boundary: upstream must submit one PDF whose pages are intended to form one catalog.
-  Unrelated curricula that require separate publication must use separate requests.
+- 观察到的失败：两页公开合成 PDF 把 `七年级上册` 和 `七年级下册` 放在两个独立 LEVEL 1 根，
+  而不是同一文档根下的范围节点；
+- 错误类型：文档范围被误判为资产根，形成森林；
+- 修正：LayoutProfile 最多允许一个 `root_labels` 条目；Vanguard 和业务提示词将全部内部分批视为
+  同一 PDF 资产的一部分；最终 Pipeline 在合并/审查后拒绝任何不等于一个 LEVEL 1 的结果。
+  身份未知时同样通过固定的 `未知学科` 根满足唯一根约束；
+- 回归证据：公开 fixture 现在包含一个文档根、两个范围节点和 41 条候选金标准；单元测试和集成测试
+  覆盖多 profile 根与多最终根的拒绝逻辑；
+- 边界：上游必须提交一份页面应当共同构成一个目录的 PDF。需要独立发布的无关课程必须分别请求。

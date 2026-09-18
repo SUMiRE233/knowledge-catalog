@@ -1,4 +1,4 @@
-# Test fixtures
+# 测试 fixture
 
-Tests generate text-layer PDFs, scanned PDFs, images, encrypted PDFs, corrupt PDFs, and empty
-files dynamically. No real curriculum document is committed here.
+测试会动态生成文本层 PDF、扫描式 PDF、图片、加密 PDF、损坏 PDF 和空文件。
+仓库不会在此提交任何真实课程文档。

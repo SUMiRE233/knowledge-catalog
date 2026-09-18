@@ -1,4 +1,4 @@
-"""Evaluate the current live multimodal model against the approved synthetic gold set."""
+"""使用已批准的合成金标准评测当前真实多模态模型。"""
 
 from __future__ import annotations
 
@@ -143,8 +143,8 @@ async def run_live_evaluation(
             and result.validation_report.error_count == 0
         ),
         "claim_boundary": (
-            "This is one temperature-zero live-model run on a synthetic PDF already known "
-            "to the evaluation design. It is not an unseen-real-PDF generalization result."
+            "本结果是在评测设计已知的合成 PDF 上进行的一次 temperature-zero 真实模型运行，"
+            "不代表模型在未见真实 PDF 上的泛化能力。"
         ),
     }
     report_path.parent.mkdir(parents=True, exist_ok=True)

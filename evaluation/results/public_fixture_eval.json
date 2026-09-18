@@ -1,6 +1,6 @@
 {
   "evaluation_id": "synthetic-junior-math-gold-v1-evaluation",
-  "evaluated_at": "2026-09-17",
+  "evaluated_at": "2026-09-18",
   "dataset": {
     "type": "synthetic",
     "fixture": "fixtures/public/synthetic_curriculum.pdf",
@@ -12,7 +12,7 @@
   "execution": {
     "runs": 1,
     "semantic_executor": "deterministic_test_double",
-    "pipeline": "PDF render -> Vanguard -> LayoutProfile review -> PromptComposer -> Extractor -> protocol review -> parser -> range -> guard -> publish",
+    "pipeline": "PDF 渲染 -> Vanguard -> LayoutProfile 审查 -> PromptComposer -> 抽取 -> 协议审查 -> 解析 -> 范围筛选 -> Guard -> 发布",
     "model_request_count": 3,
     "image_count": 2
   },
@@ -27,5 +27,5 @@
     "warning_count": 0,
     "error_count": 0
   },
-  "claim_boundary": "This measures deterministic pipeline and contract reproducibility on a synthetic fixture; it does not measure real multimodal model accuracy. Human approval status: human_approved_synthetic_gold."
+  "claim_boundary": "本结果衡量合成 fixture 上确定性流水线和契约的可复现性，不衡量真实多模态模型准确率。人工审批状态：human_approved_synthetic_gold。"
 }

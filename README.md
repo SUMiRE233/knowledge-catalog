@@ -17,6 +17,9 @@
 公开合成金标准、真实 badcase 追溯、稳定知识树 schema、版本化 manifest 和下游兼容说明。
 合成金标准状态为 `human_approved_synthetic_gold`；它闭合工程复现和数据契约验收，但不代表
 真实多模态模型在未见课程 PDF 上的泛化准确率。
+当前配置的 Qwen 已通过同一生产 Service 对公开合成 PDF 的 live-gold 验证：41/41 断言、
+33/33 节点路径、8/8 scope、唯一根、0 warning、0 error。该结果是已知 synthetic fixture
+上的单次 temperature-zero 运行，不作为未见真实 PDF 泛化证据。
 
 | 状态 | 内容 |
 |---|---|

@@ -9,6 +9,7 @@ from jsonschema import Draft202012Validator
 from app.models import KnowledgeTree
 from app.parsing.formatted_text_parser import FormattedTextParser
 from scripts.build_public_fixture import DEFAULT_SPEC, build_fixture
+from scripts.evaluate_live_public_fixture import compare_complete_tree
 from scripts.evaluate_public_fixture import evaluate, load_gold
 from scripts.run_public_demo import EXPECTED_OUTPUT, run_demo
 
@@ -32,6 +33,41 @@ def test_frozen_protocol_matches_public_regression_reference():
     )
     assert result["assertion_count"] == 41
     assert result["failed_count"] == 0
+
+
+def test_complete_tree_comparison_detects_extra_and_missing_nodes():
+    gold = [
+        {"id": "G001", "kind": "node", "path": ["根"]},
+        {"id": "G002", "kind": "node", "path": ["根", "节点"]},
+        {
+            "id": "G003",
+            "kind": "scope",
+            "path": ["根", "节点"],
+            "expected": "原文",
+        },
+    ]
+    exact = {
+        "children": [
+            {
+                "name": "根",
+                "scope": None,
+                "children": [{"name": "节点", "scope": "原文", "children": []}],
+            }
+        ]
+    }
+
+    matched = compare_complete_tree(exact, gold)
+    assert matched["exact_tree_match"] is True
+    assert matched["node_f1"] == 1.0
+    assert matched["scope_exact_accuracy"] == 1.0
+    assert matched["unique_root"] is True
+
+    exact["children"][0]["children"].append(
+        {"name": "多余节点", "scope": None, "children": []}
+    )
+    drifted = compare_complete_tree(exact, gold)
+    assert drifted["exact_tree_match"] is False
+    assert drifted["extra_paths"] == [["根", "多余节点"]]
 
 
 def test_public_demo_runs_real_preparation_and_publication_path(tmp_path):

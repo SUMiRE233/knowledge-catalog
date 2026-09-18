@@ -1,0 +1,53 @@
+{
+  "evaluation_id": "synthetic-junior-math-gold-v1-live-evaluation",
+  "evaluated_at": "2026-09-18T04:41:16.599305+00:00",
+  "dataset": {
+    "type": "synthetic",
+    "fixture": "fixtures/public/synthetic_curriculum.pdf",
+    "gold_set_id": "synthetic-junior-math-gold-v1",
+    "approval_status": "human_approved_synthetic_gold"
+  },
+  "execution": {
+    "semantic_executor": "live_multimodal_model",
+    "model_name": "qwen3.7-plus",
+    "started_at": "2026-09-18T04:40:35.679321+00:00",
+    "finished_at": "2026-09-18T04:41:16.599305+00:00",
+    "duration_seconds": 40.92,
+    "model_request_count": 3,
+    "operations": [
+      "vanguard",
+      "extract",
+      "merge"
+    ]
+  },
+  "gold_assertions": {
+    "assertion_count": 41,
+    "passed_count": 41,
+    "failed_count": 0,
+    "accuracy": 1.0,
+    "failures": []
+  },
+  "complete_tree": {
+    "expected_node_count": 33,
+    "actual_node_count": 33,
+    "matched_node_count": 33,
+    "node_precision": 1.0,
+    "node_recall": 1.0,
+    "node_f1": 1.0,
+    "missing_paths": [],
+    "extra_paths": [],
+    "scope_count": 8,
+    "scope_passed_count": 8,
+    "scope_exact_accuracy": 1.0,
+    "unique_root": true,
+    "exact_tree_match": true
+  },
+  "pipeline_validation": {
+    "passed": true,
+    "error_count": 0,
+    "warning_count": 0,
+    "issues": []
+  },
+  "passed": true,
+  "claim_boundary": "This is one temperature-zero live-model run on a synthetic PDF already known to the evaluation design. It is not an unseen-real-PDF generalization result."
+}

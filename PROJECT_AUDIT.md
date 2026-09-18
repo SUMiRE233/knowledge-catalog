@@ -21,24 +21,27 @@ criteria. It does not mark the broader Student Answer Intelligence System as com
 | Downstream contract | `docs/ATTEMPT_ORGANIZER_INTEGRATION.md` | Passed |
 | Repository hygiene | Private inputs, `.env`, caches and historical runtime outputs excluded | Passed |
 | Public licensing and remote | MIT; `git@github.com:SUMiRE233/knowledge-catalog.git` | Passed |
-| Automated checks | Ruff; 80 pytest tests; public demo; release integrity; hygiene audit | Passed |
+| Automated checks | Ruff; 81 pytest tests; public demo; release integrity; hygiene audit | Passed |
+| Live model against approved gold | `evaluation/results/public_fixture_live_eval.json`: Qwen 41/41, exact tree match | Passed |
 
 ## Evidence boundary
 
 The synthetic evaluation uses a deterministic model test double. It verifies the real
 file preparation, PDF rendering, Vanguard contract, parser, range resolver, guard and
 publisher. The curriculum owner approved all 41 synthetic assertions on 2026-09-17, but
-this does not measure live-model semantic accuracy on unseen real PDFs. Real-model behavior is represented only by
-the documented badcases and reviewed release provenance; private inputs and raw outputs
-are not committed.
+this does not measure live-model semantic accuracy on unseen real PDFs. On 2026-09-18 the
+configured Qwen model passed all 41 assertions through the production service path, with
+33/33 exact node paths, 8/8 exact scopes, one root and no guard issues. This remains one
+temperature-zero run on the known synthetic fixture. Private inputs and raw outputs are
+not committed.
 
 ## Stop decision
 
-The stated repository-completion gates are satisfied: the public fixture is reproducible,
-the 41-item synthetic gold set is frozen and owner-approved, evaluation is recorded, and a
-versioned downstream artifact is available. Feature expansion stops here. An unseen real-PDF
-blind set, OCR, distributed infrastructure and general knowledge-graph features are optional
-future maturity work rather than completion requirements.
+The implementation, deterministic reproducibility and live-on-synthetic validation gates
+are satisfied. The approved gold remained frozen during live evaluation. The repository
+returns to completed maintenance status. Feature expansion stays stopped; unseen real-PDF
+blind testing, OCR, distributed infrastructure and general knowledge-graph features remain
+optional future maturity work.
 
 ## Completion-standard mapping
 

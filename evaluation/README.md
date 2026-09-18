@@ -11,6 +11,25 @@ Run it with:
 python scripts/evaluate_public_fixture.py
 ```
 
+The command above uses a deterministic test double. To evaluate the currently configured
+live multimodal model through the same service pipeline, run:
+
+```bash
+python scripts/evaluate_live_public_fixture.py \
+  --output-dir tmp/live_public_gold_evaluation
+```
+
+The live evaluator verifies the frozen hashes, stores raw review artifacts only under the
+ignored local output directory, and writes the safe aggregate report to
+`results/public_fixture_live_eval.json`. It reports gold-assertion accuracy, exact node-path
+precision/recall/F1, scope accuracy, extra/missing paths, the one-root invariant and
+OutputGuard results. This is not an unseen-real-PDF blind test.
+
+The recorded 2026-09-18 Qwen run passed 41/41 assertions, matched all 33 node paths and all
+8 checked scopes, produced no extra or missing paths, retained one root, and passed
+OutputGuard with zero warnings and errors. Its aggregate evidence is checked in; raw model
+artifacts remain in the ignored local evaluation directory.
+
 These assertions were authored during implementation and then reviewed and explicitly
 approved by the curriculum owner on 2026-09-17. Their status is
 `human_approved_synthetic_gold`.
